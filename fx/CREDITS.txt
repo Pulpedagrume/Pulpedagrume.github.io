@@ -1,0 +1,13 @@
+Sprite-sheets d'effets — toutes en CC0 (domaine public, aucune attribution requise).
+
+explosion.png        — OpenGameArt "Explosion" (https://opengameart.org/content/explosion-7)
+                       1000x500, frames 100px (grille 10x5, 50 frames).
+
+fx_*.png             — "Free Pixel Effects Pack" par CodeManu, CC0
+                       (https://opengameart.org/content/free-pixel-effects-pack)
+                       Frames de 100x100. Effets utilisés :
+                         fx_fire (feu), fx_ice (gel), fx_water (énergie bleue),
+                         fx_wind (vortex), fx_earth (impact), fx_radiation (sort vert),
+                         fx_light (rayon solaire), fx_celestial (nébuleuse).
+
+Pour remplacer un effet : dépose ton PNG (frames 100px) sous le même nom dans public/fx/.
