@@ -1,0 +1,225 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Générateur de bannière — Elemental Weapon Arena</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@600;800&display=swap" rel="stylesheet" />
+<style>
+  :root { color-scheme: light; }
+  body { margin:0; background:#20201c; color:#f5f0e8; font-family:'Inter',system-ui,sans-serif; padding:18px; }
+  h1 { font-family:'Press Start 2P',monospace; font-size:14px; color:#F5A623; margin:0 0 14px; }
+  .bar { display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-bottom:14px; }
+  .bar .grp { display:flex; gap:6px; background:#2c2c26; padding:6px; border-radius:10px; }
+  button { font-family:'Inter'; font-weight:800; font-size:13px; cursor:pointer; border:none;
+           border-radius:8px; padding:8px 12px; background:#3a3a32; color:#f5f0e8; }
+  button.on { background:#F5A623; color:#1c1a15; }
+  button.dl { background:#40C040; color:#0f1a0f; padding:10px 18px; font-size:14px; }
+  .wrap { max-width:100%; overflow:auto; border-radius:12px; }
+  canvas { max-width:100%; height:auto; display:block; border-radius:12px; box-shadow:0 10px 40px rgba(0,0,0,.5); }
+  .hint { font-size:12px; opacity:.7; margin-top:10px; line-height:1.5; }
+  label.lbl { font-size:12px; opacity:.75; margin-right:4px; align-self:center; }
+</style>
+</head>
+<body>
+  <h1>BANNIÈRE — TOUS LES PERSONNAGES</h1>
+  <div class="bar">
+    <span class="grp" id="sizeGrp">
+      <label class="lbl">Taille</label>
+      <button data-w="1920" data-h="1080" class="on">16:9 · 1920×1080</button>
+      <button data-w="2560" data-h="1440">YouTube · 2560×1440</button>
+      <button data-w="1500" data-h="500">X/Twitter · 1500×500</button>
+      <button data-w="1080" data-h="1080">Carré · 1080</button>
+    </span>
+    <span class="grp" id="themeGrp">
+      <label class="lbl">Thème</label>
+      <button data-theme="cream" class="on">Crème</button>
+      <button data-theme="dark">Sombre</button>
+    </span>
+    <span class="grp" id="optGrp">
+      <button id="btnLabels" class="on">Noms ✓</button>
+      <button id="btnArc" class="on">Arc ✓</button>
+    </span>
+    <button class="dl" id="btnDl">⬇ Télécharger PNG</button>
+  </div>
+  <div class="wrap"><canvas id="cv" width="1920" height="1080"></canvas></div>
+  <div class="hint">
+    Astuce YouTube : la « zone sûre » lisible sur tous les écrans est la bande centrale
+    (1546×423 pour 2560×1440). Les orbes des extrémités peuvent être rognés sur mobile/TV — normal
+    pour une bannière « pleine largeur ».
+  </div>
+
+<script>
+const CANV = document.getElementById('cv');
+const ctx = CANV.getContext('2d');
+
+// Ordre + métadonnées (couleurs officielles du jeu)
+const ELEMENTS = [
+  ['fire','FIRE','🔥','#E84040'],
+  ['water','WATER','💧','#4080E8'],
+  ['plant','PLANT','🌿','#40C040'],
+  ['lightning','LIGHTNING','⚡','#F0D000'],
+  ['ice','ICE','❄️','#80D8F0'],
+  ['wind','WIND','🌬️','#A0C080'],
+  ['earth','EARTH','🪨','#A06030'],
+  ['radiation','RADIATION','☢️','#80E040'],
+  ['light','LIGHT','✨','#F8E840'],
+  ['celestial','CELESTIAL','🌌','#C080F0'],
+  ['volcano','VOLCANO','🌋','#C25018'],
+];
+
+const state = { w:1920, h:1080, theme:'cream', labels:true, emblem:true, arc:true };
+const imgs = {};
+let emblemImg = null;
+
+function loadImg(src){ return new Promise(res=>{ const i=new Image(); i.onload=()=>res(i); i.onerror=()=>res(null); i.src=src; }); }
+
+async function preload(){
+  await Promise.all(ELEMENTS.map(async e => { imgs[e[0]] = await loadImg('/orb/orb_'+e[0]+'.png'); }));
+  emblemImg = await loadImg('/ui/vs_emblem.png');
+  if (document.fonts && document.fonts.ready) { try { await document.fonts.load('700 40px "Press Start 2P"'); await document.fonts.ready; } catch(e){} }
+  draw();
+}
+
+function hexA(hex,a){ const n=parseInt(hex.slice(1),16); return `rgba(${(n>>16)&255},${(n>>8)&255},${n&255},${a})`; }
+
+function fitFont(text, max, family, weight, start){
+  let s=start;
+  ctx.font = `${weight} ${s}px ${family}`;
+  while (ctx.measureText(text).width > max && s > 8){ s-=2; ctx.font=`${weight} ${s}px ${family}`; }
+  return s;
+}
+
+function draw(){
+  const W=state.w, H=state.h; CANV.width=W; CANV.height=H;
+  const dark = state.theme==='dark';
+
+  // --- Fond ---
+  const g = ctx.createRadialGradient(W*0.5, H*0.42, H*0.05, W*0.5, H*0.5, W*0.72);
+  if (dark){ g.addColorStop(0,'#2a241e'); g.addColorStop(0.55,'#191510'); g.addColorStop(1,'#0f0c09'); }
+  else     { g.addColorStop(0,'#FFFDF7'); g.addColorStop(0.6,'#F3E9D6'); g.addColorStop(1,'#E7D9BE'); }
+  ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+
+  // Rayons esport derrière le centre
+  ctx.save(); ctx.translate(W*0.5, H*0.44);
+  const rays=16, R=Math.hypot(W,H);
+  for(let i=0;i<rays;i++){ const a=(i/rays)*Math.PI*2;
+    ctx.fillStyle = dark ? (i%2? 'rgba(245,166,35,0.05)':'rgba(255,255,255,0.02)')
+                         : (i%2? 'rgba(245,166,35,0.10)':'rgba(255,255,255,0.05)');
+    ctx.beginPath(); ctx.moveTo(0,0);
+    ctx.lineTo(Math.cos(a-0.10)*R, Math.sin(a-0.10)*R);
+    ctx.lineTo(Math.cos(a+0.10)*R, Math.sin(a+0.10)*R); ctx.closePath(); ctx.fill(); }
+  ctx.restore();
+
+  // Poussière de pixels
+  ctx.fillStyle = dark ? 'rgba(255,220,150,0.10)' : 'rgba(120,90,40,0.10)';
+  for(let i=0;i<90;i++){ const s=(i%3)+2; ctx.fillRect((i*97.3%W)|0, (i*57.7%H)|0, s, s); }
+
+  const cx=W/2;
+  const short = H/W > 0.45; // bannières courtes (3:1) : layout compact
+  const squareish = Math.abs(W-H) < W*0.15;
+
+  // --- Zones verticales ---
+  const titleY = short ? H*0.24 : (squareish? H*0.19 : H*0.21);
+  const orbsY  = short ? H*0.60 : (squareish? H*0.60 : H*0.58);
+
+  // --- Titre ---
+  const outline = '#16130F';
+  const titleFill = dark ? '#F6EAD0' : '#F5A623';
+  const drawTitleLine = (txt, y, size) => {
+    ctx.font = `700 ${size}px "Press Start 2P"`;
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.lineJoin='round'; ctx.lineWidth = Math.max(6, size*0.20);
+    ctx.strokeStyle=outline; ctx.strokeText(txt, cx, y);
+    ctx.fillStyle=titleFill; ctx.fillText(txt, cx, y);
+  };
+  const maxTW = W*0.86;
+  const s1 = fitFont('BATTLE ORB', maxTW, '"Press Start 2P"', 700, H*0.15);
+  const s2 = fitFont('ARENA', maxTW*0.8, '"Press Start 2P"', 700, H*0.15);
+  drawTitleLine('BATTLE ORB', titleY - s1*0.62, s1);
+  drawTitleLine('ARENA', titleY + s2*0.72, s2);
+
+  // --- Rangée des 11 orbes ---
+  const n=ELEMENTS.length;
+  const pad = W*0.02;
+  const cell = (W - pad*2)/n;
+  const baseD = cell*0.9;
+  const arcAmp = state.arc ? H*0.05 : 0;
+  ctx.imageSmoothingEnabled = false;
+
+  for(let i=0;i<n;i++){
+    const [id,name,emo,color]=ELEMENTS[i];
+    const px = pad + cell*(i+0.5);
+    const t = (i-(n-1)/2)/((n-1)/2);       // -1..1
+    const bump = 1 - t*t;                    // pic au centre
+    const py = orbsY - arcAmp*bump;
+    const d = baseD*(1 + 0.10*bump);
+
+    // halo coloré
+    const gg = ctx.createRadialGradient(px,py,d*0.15,px,py,d*0.72);
+    gg.addColorStop(0,hexA(color,0.55)); gg.addColorStop(0.6,hexA(color,0.18)); gg.addColorStop(1,hexA(color,0));
+    ctx.fillStyle=gg; ctx.beginPath(); ctx.arc(px,py,d*0.72,0,Math.PI*2); ctx.fill();
+
+    // ombre portée
+    ctx.save(); ctx.shadowColor='rgba(0,0,0,0.35)'; ctx.shadowBlur=d*0.12; ctx.shadowOffsetY=d*0.06;
+    const orb = imgs[id];
+    if (orb){ ctx.drawImage(orb, px-d/2, py-d/2, d, d); }
+    else { ctx.fillStyle=color; ctx.beginPath(); ctx.arc(px,py,d*0.42,0,Math.PI*2); ctx.fill(); }
+    ctx.restore();
+
+    // libellé
+    if (state.labels){
+      const ly = py + d*0.60;
+      const fs = Math.max(9, Math.min(cell*0.11, 18));
+      ctx.font=`700 ${fs}px "Press Start 2P"`; ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.lineJoin='round'; ctx.lineWidth=Math.max(4,fs*0.5); ctx.strokeStyle=outline;
+      ctx.strokeText(name, px, ly); ctx.fillStyle=color; ctx.fillText(name, px, ly);
+      // emoji au-dessus
+      ctx.font=`${Math.round(d*0.16)}px system-ui`; ctx.fillStyle='#fff';
+      ctx.fillText(emo, px, py - d*0.60);
+    }
+  }
+  ctx.imageSmoothingEnabled=true;
+
+  // --- Tagline bas ---
+  if(!short){
+    const ty = H*0.93;
+    const fs = fitFont('11 ÉLÉMENTS · 1 SEULE ARÈNE · QUI GAGNE ?', W*0.6, '"Press Start 2P"', 700, H*0.028);
+    ctx.font=`700 ${fs}px "Press Start 2P"`; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.lineJoin='round'; ctx.lineWidth=Math.max(4,fs*0.5); ctx.strokeStyle=outline;
+    ctx.strokeText('11 ÉLÉMENTS · 1 SEULE ARÈNE · QUI GAGNE ?', cx, ty);
+    ctx.fillStyle = dark ? '#C9BEA6' : '#6B5A3A';
+    ctx.fillText('11 ÉLÉMENTS · 1 SEULE ARÈNE · QUI GAGNE ?', cx, ty);
+  }
+}
+
+// --- Contrôles ---
+document.getElementById('sizeGrp').addEventListener('click', e=>{
+  const b=e.target.closest('button'); if(!b) return;
+  [...e.currentTarget.querySelectorAll('button')].forEach(x=>x.classList.remove('on'));
+  b.classList.add('on'); state.w=+b.dataset.w; state.h=+b.dataset.h; draw();
+});
+document.getElementById('themeGrp').addEventListener('click', e=>{
+  const b=e.target.closest('button'); if(!b) return;
+  [...e.currentTarget.querySelectorAll('button')].forEach(x=>x.classList.remove('on'));
+  b.classList.add('on'); state.theme=b.dataset.theme; draw();
+});
+const tog=(id,key)=>{ const b=document.getElementById(id); b.addEventListener('click',()=>{
+  state[key]=!state[key]; b.classList.toggle('on',state[key]);
+  b.textContent = b.textContent.replace(/[✓✗]$/, state[key]?'✓':'✗'); draw();
+}); };
+tog('btnLabels','labels'); tog('btnArc','arc');
+document.getElementById('btnDl').addEventListener('click', ()=>{
+  CANV.toBlob(blob=>{ const a=document.createElement('a');
+    a.href=URL.createObjectURL(blob);
+    a.download=`banniere_arena_${state.w}x${state.h}_${state.theme}.png`; a.click();
+    setTimeout(()=>URL.revokeObjectURL(a.href),2000);
+  },'image/png');
+});
+
+preload();
+</script>
+</body>
+</html>
