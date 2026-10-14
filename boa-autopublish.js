@@ -112,19 +112,34 @@ function status(t) { const el = document.getElementById("boa-status"); if (el) e
 function render() {
   const el = document.getElementById("boa-count");
   if (el) el.textContent = `${CAP.length} captee(s) · ${CAP.filter(c => c.yt).length} sur YouTube`;
+  const h = document.getElementById("boa-head");
+  if (h) h.textContent = (isOpen() ? "▾ " : "▸ ") + "PUBLICATION" + (CAP.length ? ` (${CAP.length})` : "");
+}
+/* Le panneau flottait en permanence par-dessus l'interface et masquait des boutons :
+   il est maintenant REPLIÉ par défaut (un clic sur l'en-tête l'ouvre), état mémorisé. */
+function isOpen() { try { return localStorage.getItem("boa-panel-open") === "1"; } catch { return false; } }
+function setOpen(v) {
+  try { localStorage.setItem("boa-panel-open", v ? "1" : "0"); } catch { /* ignore */ }
+  const body = document.getElementById("boa-body"); if (body) body.style.display = v ? "block" : "none";
+  const box = document.getElementById("boa-panel"); if (box) box.style.width = v ? "260px" : "auto";
+  render();
 }
 function panel() {
   const box = document.createElement("div");
   box.id = "boa-panel";
-  box.style.cssText = "position:fixed;right:14px;bottom:14px;z-index:99999;width:260px;background:#20201c;color:#f5f0e8;font:12px/1.4 Inter,system-ui,sans-serif;border-radius:12px;padding:12px;box-shadow:0 10px 40px rgba(0,0,0,.5)";
+  box.style.cssText = "position:fixed;right:14px;bottom:14px;z-index:99999;width:260px;background:#20201c;color:#f5f0e8;font:12px/1.4 Inter,system-ui,sans-serif;border-radius:12px;padding:10px 12px;box-shadow:0 10px 40px rgba(0,0,0,.5)";
   box.innerHTML = `
-    <div style="font:700 12px 'Press Start 2P',monospace;color:#F5A623;margin-bottom:8px">PUBLICATION</div>
+    <div id="boa-head" style="font:700 12px 'Press Start 2P',monospace;color:#F5A623;cursor:pointer;user-select:none">PUBLICATION</div>
+    <div id="boa-body" style="margin-top:8px">
     <div id="boa-count" style="opacity:.8;margin-bottom:8px">0 captee(s)</div>
     <button id="boa-yt" style="width:100%;margin:3px 0;padding:9px;border:0;border-radius:8px;font-weight:800;cursor:pointer;background:#E84040;color:#fff">Programmer sur YouTube</button>
     <button id="boa-tt" style="width:100%;margin:3px 0;padding:9px;border:0;border-radius:8px;font-weight:800;cursor:pointer;background:#40C040;color:#0f1a0f">Télécharger pour TikTok</button>
     <button id="boa-r"  style="width:100%;margin:3px 0;padding:6px;border:0;border-radius:8px;cursor:pointer;background:#3a3a32;color:#f5f0e8">Vider la file</button>
-    <div id="boa-status" style="margin-top:8px;opacity:.75;min-height:16px"></div>`;
+    <div id="boa-status" style="margin-top:8px;opacity:.75;min-height:16px"></div>
+    </div>`;
   document.body.appendChild(box);
+  document.getElementById("boa-head").onclick = () => setOpen(!isOpen());
+  setOpen(isOpen());
   document.getElementById("boa-yt").onclick = () => scheduleYouTube().catch(e => status("Erreur: " + e.message));
   document.getElementById("boa-tt").onclick = downloadForTikTok;
   document.getElementById("boa-r").onclick = () => { CAP.length = 0; render(); status("File videe."); };

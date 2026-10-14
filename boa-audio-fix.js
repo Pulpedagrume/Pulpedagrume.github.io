@@ -13,10 +13,16 @@
   var AC = window.AudioContext || window.webkitAudioContext;
   if (!AC) return;
 
+  /* IMPORTANT : ce patch ne touche QUE l'ecoute en direct (ctx.destination), PAS la piste enregistree
+   * dans la video (MediaStreamDestination). Avec master=0.45 + 2e compresseur, on ecoutait -7 dB plus
+   * bas et plus "ecrase" que la video exportee : on jugeait le son sur autre chose que le produit.
+   * Le jeu a maintenant sa propre chaine de mastering complete (limiteur + ecreteur doux), donc ici :
+   *   master = 1.0 (ecoute == export) et compresseur NEUTRALISE (seuil 0 dB = n'agit jamais).
+   * Le volume d'ecoute se regle avec le volume de l'ordinateur. */
   var CFG = {
-    master: 0.45,       // volume global
+    master: 1.0,        // volume global (1.0 = identique a l'export)
     background: 0.40,   // fond de l'arene (ambiance). Plus bas = plus discret.
-    threshold: -3, knee: 3, ratio: 20, attack: 0.002, release: 0.15,
+    threshold: 0, knee: 0, ratio: 1, attack: 0.002, release: 0.15,
   };
   var masters = [];
 
