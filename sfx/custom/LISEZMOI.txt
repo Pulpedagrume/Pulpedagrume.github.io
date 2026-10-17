@@ -1,0 +1,12 @@
+TES PROPRES SONS PAR ATTAQUE
+============================
+1. Copie ton fichier ici (public/sfx/custom/), par ex. kamehameha.mp3
+2. Ouvre list.json et associe-le a l'attaque :
+   { "goku_kamehameha": "kamehameha.mp3", "naruto_rasengan": "rasengan.mp3" }
+3. Recharge le jeu. Le son est joue au LANCEMENT de l'attaque, a la place des sons signature.
+
+Noms d'attaques : voir ATTACK_SAMPLES dans src/audio/samples.js
+(ex. goku_kamehameha, naruto_rasengan, sasuke_chidori, zoro_onigiri, luffy_gear5, gojo_purple...).
+
+ATTENTION DROITS : les vrais extraits audio des animes (voix, sons officiels) appartiennent a leurs
+studios. Sur TikTok/YouTube, ils peuvent faire couper le son ou demonetiser la video (Content ID).
